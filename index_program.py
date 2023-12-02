@@ -4,7 +4,7 @@ import string
 import sys
 import heapq
 import time
-import utils
+from utils import Compressor
 """
 DATA STRUCTURE EXPLAINED
 For this project, we are storing a posting list of terms as a nested dictionary
@@ -32,7 +32,7 @@ properly read in files and create the index.
 def inverted_index():
     infile_commandline = sys.argv[1]
     infile = open(infile_commandline, "r")
-
+    global index_dict
     read_infile = infile.read()
 
     # split infile into "documents" denoted by "\n\n"
@@ -74,51 +74,71 @@ def inverted_index():
         doc_id += 1     # increment doc_id (u)
         infile.close()  # close infile
 
-    # sort the dictionary by alphabetical order
-    global sorted_index_dict    # need to specify we are editing the global (idk why we just do or else it doesnt work)
-    sorted_index_dict = {k: v for k, v in sorted(index_dict.items(), key=lambda item: item[0])}
+    index_dict = dict(sorted(index_dict.items()))
     
 
 
     outfile_txt = open(sys.argv[2]+".txt", "w")
     #items to be compressed
     #writing to outfile_dic
-    outfile_dic = open(sys.argv[2]+".dic", "w")
-    outfile_dic.write(utils.gamma_encode(len(doc_len)))
-    # outfile_dic.write("\n")
-    print(max(doc_len.values()))
-    m = math.ceil(math.log(max(doc_len.values()), 2))
-    outfile_dic.write(utils.gamma_encode(m))
-    # outfile_dic.write("\n")
-    for doc, length in doc_len.items():
-        outfile_dic.write(binary_representation(length, m))
-        # outfile_dic.write("\n")
-    outfile_dic.close()
+    # outfile_dic = open(sys.argv[2]+".dic", "w")
+    # outfile_dic.write(utils.gamma_encode(len(doc_len)))
+    # # outfile_dic.write("\n")
+    # print(max(doc_len.values()))
+    # m = math.ceil(math.log(max(doc_len.values()), 2))
+    # outfile_dic.write(utils.gamma_encode(m))
+    # # outfile_dic.write("\n")
+    # for doc, length in doc_len.items():
+    #     outfile_dic.write(binary_representation(length, m))
+    #     # outfile_dic.write("\n")
+    # outfile_dic.close()
 
-    #writing to outfile_txt
-    outfile_txt = open(sys.argv[2]+".txt", "w")
-    # offset_1 = 0
-    # offset_2 = 0
-    # outfile_txt.write(offset_1)
-    # outfile_txt.write(offset_2)
-    max_int_offset = sum([len(x)+8+8 for x in index_dict.keys()]) #sum of all tuple lengths in second line len(term)+len(vByte(posting len))+len(vByte(offset))
-    w = math.ceil(math.log(w,2))
-    outfile_txt.write(utils.gamma_encode(w))
     line1 = ""
-    idx = 0
-    for word in index_dict.keys():
-        line1 += ("0"*w+str(idx))[-w:]
-        idx += (len(word)+16)
     line2 = ""
     pos=0
     line3 = ""
-    for word,occurences in index_dict.items():
-        line2 += word
-        line2 += ("00000000"+str(pos))[-8:]
-        pos += 2*len(docs)
-        for doc in docs:
-            line3+=(str(doc)+',')
-    line3 = line3[:-1]
+    line2_comp = Compressor()
+    line3_comp = Compressor()
+    for term, posting in index_dict.items():
+        num_docs = len(posting)
+        mod = 2
+        line3 = line3_comp.vbyte_encode(num_docs, line3)
+        line3 = line3_comp.vbyte_encode(mod, line3)
+        adjusted_term = term + '\0'
+        line2 += adjusted_term
+        line2_comp.start_bit_offset += 8*len(adjusted_term)
+        line2 = line2_comp.vbyte_encode(num_docs, line2)
+        for doc, occurences in posting.items():
+            line3 = line3_comp.append_gamma(len(occurences), line3)
+            line3 = line3_comp.append_rice_sequence(occurences, mod, line3, -1)
+        line2 = line2_comp.vbyte_encode(line3_comp.start_bit_offset, line2)
+        line1 += str(line2_comp.start_bit_offset)
+    
+    offset_1 = 8*len(line1)
+    offset_2 = line2_comp.start_bit_offset
+
+    w = math.ceil(math.log(offset_2, 2))
+
+    print(offset_1, offset_2)
+    print(w)
+    # print(line1)
+    # print(repr(line2))
+    # print("\n\n")
+    # print(repr(line3))
+
+## 2,7,5,<1,5,6,8,9>,4,<1,4,5,6>
+
+    # #writing to outfile_txt
+    # outfile_txt = open(sys.argv[2]+".txt", "w")
+    # # offset_1 = 0
+    # # offset_2 = 0
+    # # outfile_txt.write(offset_1)
+    # # outfile_txt.write(offset_2)
+    # max_int_offset = sum([len(x)+8+8 for x in index_dict.keys()]) #sum of all tuple lengths in second line len(term)+len(vByte(posting len))+len(vByte(offset))
+    # w = math.ceil(math.log(max_int_offset,2))
+    # outfile_txt.write(utils.gamma_encode(w))
+    
+        
     
 
     ######integer offsets into term, num_docs_with_term, offset tuple list######
