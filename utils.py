@@ -241,11 +241,12 @@ class Compressor:
         output = self.append_unary(modulus, output)
         mask = (1 << modulus) - 1
 
-        for pre_to_encode in int_sequence:
+        for freq, pre_to_encode in int_sequence:
             to_encode = pre_to_encode if delta_start < 0 else pre_to_encode - last_encode
             to_encode -= 1
             last_encode = pre_to_encode
 
+            output = self.append_gamma(freq, output)
             output = self.append_unary((to_encode >> modulus) + 1, output)
             output = self.append_bits(to_encode & mask, output, modulus)
 
@@ -257,11 +258,12 @@ class Compressor:
         modulus = self.decode_unary(input_str)
 
         for i in range(num_decode):
+            freq = self.decode_gamma_list(input_str, 1)[0]
             quotient = self.decode_unary(input_str) - 1
             remainder = self.decode_bits(input_str, modulus)
             decode = (quotient << modulus) + remainder + 1
             last_decode = decode if delta_start == -1 else last_decode + decode
-            out_list.append(last_decode)
+            out_list.append([freq, last_decode])
 
         return out_list
 
@@ -279,7 +281,7 @@ decoded = comp.decode_gamma_list(ip,2)
 print(decoded)
 # print(self.start_bit_offset)
 
-arr = [1,4,7]
+arr = [[1,4], [2, 5], [7,12]]
 mod = 4
 op = ""
 comp.start_bit_offset = 0
@@ -288,9 +290,12 @@ op = comp.append_rice_sequence(arr,mod,op,-1)
 comp.start_bit_offset = 0
 print(comp.decode_rice_sequence(op,3,-1))
 
-my_integer = ""
-c = Compressor()
+# my_integer = ""
+# c = Compressor()
 
-line = ""
-line = c.append_rice_sequence([343, 565], 2, line, -1)
-print(repr(line))
+# line = ""
+# line = c.append_rice_sequence([343, 565], 2, line, -1)
+# print(repr(line))
+
+
+

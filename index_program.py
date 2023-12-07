@@ -81,46 +81,59 @@ def inverted_index():
     outfile_txt = open(sys.argv[2]+".txt", "w")
     #items to be compressed
     #writing to outfile_dic
-    # outfile_dic = open(sys.argv[2]+".dic", "w")
-    # outfile_dic.write(utils.gamma_encode(len(doc_len)))
-    # # outfile_dic.write("\n")
-    # print(max(doc_len.values()))
-    # m = math.ceil(math.log(max(doc_len.values()), 2))
-    # outfile_dic.write(utils.gamma_encode(m))
-    # # outfile_dic.write("\n")
-    # for doc, length in doc_len.items():
-    #     outfile_dic.write(binary_representation(length, m))
-    #     # outfile_dic.write("\n")
-    # outfile_dic.close()
+    dic_comp = Compressor()
+    outfile_dic = open(sys.argv[2]+".dic", "w")
+    dic_content = ""
+    dic_content = dic_comp.append_gamma(len(doc_len), dic_content)
+    m = math.ceil(math.log(max(doc_len.values()), 2))+1
+    dic_content = dic_comp.append_gamma(m, dic_content)
+    for doc, length in doc_len.items():
+        dic_content = dic_comp.append_bits(length, dic_content, m)
+    outfile_dic.write(dic_content)
+    outfile_dic.close()
 
     line1 = ""
     line2 = ""
-    pos=0
     line3 = ""
+    line1_comp = Compressor()
     line2_comp = Compressor()
     line3_comp = Compressor()
+    line1_offsets = []
     for term, posting in index_dict.items():
+        line1_offsets.append(line2_comp.start_bit_offset)
+
         num_docs = len(posting)
-        mod = 2
-        line3 = line3_comp.vbyte_encode(num_docs, line3)
-        line3 = line3_comp.vbyte_encode(mod, line3)
         adjusted_term = term + '\0'
         line2 += adjusted_term
         line2_comp.start_bit_offset += 8*len(adjusted_term)
         line2 = line2_comp.vbyte_encode(num_docs, line2)
-        for doc, occurences in posting.items():
-            line3 = line3_comp.append_gamma(len(occurences), line3)
-            line3 = line3_comp.append_rice_sequence(occurences, mod, line3, -1)
         line2 = line2_comp.vbyte_encode(line3_comp.start_bit_offset, line2)
-        line1 += str(line2_comp.start_bit_offset)
-    
-    offset_1 = 8*len(line1)
+
+        mod = 2
+        line3 = line3_comp.vbyte_encode(num_docs, line3)
+        line3 = line3_comp.vbyte_encode(mod, line3)
+        # for doc, occurences in posting.items():
+            # line3 = line3_comp.append_gamma(len(occurences), line3)
+            # line3 = line3_comp.append_rice_sequence(occurences, mod, line3, -1)
+        freq_doc = [[doc, len(occurences)] for doc,occurences in posting.items()]
+        line3 = line3_comp.append_rice_sequence(freq_doc, mod, line3)
+
     offset_2 = line2_comp.start_bit_offset
 
-    w = math.ceil(math.log(offset_2, 2))
+    w = math.ceil(math.log(offset_2, 2))+1
+    print('offsets: ', line1_offsets)
+    for offset in line1_offsets:
+        line1 = line1_comp.append_bits(offset, line1, w)
+    offset_1 = line1_comp.start_bit_offset
 
     print(offset_1, offset_2)
     print(w)
+    line0 = ""
+    line0_comp = Compressor()
+    line0 = line0_comp.append_gamma(offset_1, line0)
+    line0 = line0_comp.append_gamma(offset_2, line0)
+    line0 = line0_comp.append_gamma(w, line0)
+
     # print(line1)
     # print(repr(line2))
     # print("\n\n")
@@ -137,6 +150,12 @@ def inverted_index():
     # max_int_offset = sum([len(x)+8+8 for x in index_dict.keys()]) #sum of all tuple lengths in second line len(term)+len(vByte(posting len))+len(vByte(offset))
     # w = math.ceil(math.log(max_int_offset,2))
     # outfile_txt.write(utils.gamma_encode(w))
+
+    outfile_txt.write(line0)
+    outfile_txt.write(line1)
+    outfile_txt.write(line2)
+    outfile_txt.write(line3)
+    outfile_txt.close()
     
         
     

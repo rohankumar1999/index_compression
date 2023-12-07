@@ -4,19 +4,44 @@ import string
 import sys
 import heapq
 import time
+from utils import Compressor
 
 def term_rank():
     #items to be de-compressed:
     doc_len = {}
+    with open(sys.argv[1]+".dic", 'rb') as infile_dic:
+        dic_file = infile_dic.read().decode('utf-8')
+        dic_comp = Compressor()
+        num_docs = dic_comp.decode_gamma_list(dic_file,1)[0]
+        m = dic_comp.decode_gamma_list(dic_file, 1)[0]
+        for i in range(num_docs):
+            doc_len[i] = dic_comp.decode_bits(dic_file, m)
+    # return
     index_dict = {}
+    with open(sys.argv[1]+".txt", 'rb') as infile_txt:
+        txt_file = infile_txt.read().decode('utf-8')
+        txt_comp = Compressor()
+        import pdb;pdb.set_trace()
+        offset_1,offset_2 = txt_comp.decode_gamma_list(txt_file,2)
+        w = txt_comp.decode_gamma_list(txt_file, 1)[0]
+        print('here', offset_1, offset_2, w)
+        line1_start_offset = txt_comp.start_bit_offset
+        temp = []
+        while txt_comp.start_bit_offset - line1_start_offset <= offset_1:
+            offset = txt_comp.decode_bits(txt_file, w)
+            temp.append(offset)
+        print(temp)
+    # return
+
     ############################
 
-    num_results         = int(sys.argv[2])  # num_results of output table (k)
-    num_acc             = int(sys.argv[3])  # number of acc to limit (limits num of doc)
-    unfiltered_query    = sys.argv[4:]      # query starts at 3rd cmdline arg and onwards
+    num_results         = 10  # num_results of output table (k)
+    num_acc             = 10  # number of acc to limit (limits num of doc)
+    unfiltered_query    = sys.argv[2:-1]      # query starts at 3rd cmdline arg and onwards
     query               = []                # actual query var
     N                   = len(doc_len)      # N, document count
     start_time          = time.perf_counter()
+    rel_measure = sys.argv[-1]
 
 
     # calulcate the average doc length (l_avg)
@@ -65,10 +90,17 @@ def term_rank():
             if doc_id in acc:
                 f_td    = len(index_dict[q][doc_id])    # number of occurrences in doc
                 l_d     = doc_len[doc_id]               # length of doc
-                idf     = idf_values[q]
-                TF_BM25 = (f_td * (2.2)) / (f_td + (1.2 * ((1 - 0.75) + (0.75 * (l_d / l_avg)))))
-                score   = idf * TF_BM25
-                acc[doc_id] += score
+                lam = 0.5
+                q_t = 1 # we compute score for each occurence of term separately
+                l_C = sum(doc_len.values())
+                l_t = len(index_dict[q].keys())
+                N = len(doc_len.keys())
+                if rel_measure == 'LMJM':
+                    LMJM = q_t * math.log(1 + ((1-lam)/lam) * (f_td/l_d) * (l_C/l_t), 2)
+                    acc[doc_id] += LMJM
+                else:
+                    DFR = q_t * (math.log(1 + (l_t / N)) + (f_td * math.log(1 + (N / l_t)))) / (f_td + 1)
+                    acc[doc_id] += DFR
 
             # ---------------------------------------------- #
             # doc_id does not have an accumulator, make one  #
@@ -81,10 +113,18 @@ def term_rank():
                     acc[doc_id] = 0
                     f_td    = len(index_dict[q][doc_id])    # number of occurrences in doc
                     l_d     = doc_len[doc_id]               # length of doc
-                    idf     = idf_values[q]
-                    TF_BM25 = (f_td * (2.2)) / (f_td + (1.2 * ((1 - 0.75) + (0.75 * (l_d / l_avg)))))
-                    score   = idf * TF_BM25
-                    acc[doc_id] += score
+                    lam = 0.5
+                    q_t = 1 # we compute score for each occurence of term separately
+                    l_C = sum(doc_len.values())
+                    l_t = len(index_dict[q].keys())
+                    N = len(doc_len.keys())
+                    if rel_measure == 'LMJM':
+                        LMJM = q_t * math.log(1 + ((1-lam)/lam) * (f_td/l_d) * (l_C/l_t), 2)
+                        acc[doc_id] += LMJM
+                    else:
+                        DFR = q_t * (math.log(1 + (l_t / N)) + (f_td * math.log(1 + (N / l_t)))) / (f_td + 1)
+                        acc[doc_id] += DFR
+                    
 
 
         else:   # no term in index
@@ -137,4 +177,4 @@ def term_rank():
     return
 
 if __name__ == "__main__":
-    term_rank
+    term_rank()
