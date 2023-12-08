@@ -120,7 +120,7 @@ def inverted_index():
 
     offset_2 = line2_comp.start_bit_offset
 
-    w = math.ceil(math.log(offset_2, 2))+1
+    w = math.ceil(math.log(offset_2, 2))+2
     print('offsets: ', line1_offsets)
     for offset in line1_offsets:
         line1 = line1_comp.append_bits(offset, line1, w)
