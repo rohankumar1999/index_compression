@@ -54,7 +54,6 @@ def inverted_index():
         infile.close()
 
     index_dict = dict(sorted(index_dict.items()))
-    breakpoint()
     dump_txt_file = open(sys.argv[2]+"_dump.txt", "w")
     dump_txt_file.write(json.dumps(index_dict))
     dump_txt_file.close()
@@ -88,7 +87,8 @@ def inverted_index():
         line2 = line2_comp.vbyte_encode(num_docs, line2)
         line2 = line2_comp.vbyte_encode(line3_comp.start_bit_offset, line2)
 
-        mod = 2
+        m_star = -1 / math.log((1 - num_docs / len(doc_len)), 2) if num_docs < len(doc_len) else 1
+        mod = math.ceil(2**math.floor(math.log(m_star, 2))) #choosing appropriate modulus for rice encoding
         line3 = line3_comp.vbyte_encode(num_docs, line3)
         line3 = line3_comp.vbyte_encode(mod, line3)
         freq_doc = [[doc, len(occurences)] for doc,occurences in posting.items()]
