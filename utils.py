@@ -269,26 +269,30 @@ class Compressor:
 
 comp = Compressor()
 ip = ""
-ip = comp.append_gamma(16,ip)
-offset = comp.start_bit_offset
-ip = comp.append_gamma(456,ip)
-print(len(ip))
-print(comp.start_bit_offset)
-comp.start_bit_offset = 0
-print(' '.join(format(ord(x), 'b') for x in ip))
-# print(int(ip,2))
-decoded = comp.decode_gamma_list(ip,2)
-print(decoded)
-# print(self.start_bit_offset)
+ip = comp.append_bits(1223, ip, 15)
+ip = comp.append_bits(2323, ip, 15)
+decom = Compressor()
+# ip = ""
+# ip = comp.append_gamma(7956,ip)
+# offset = comp.start_bit_offset
+# ip = comp.append_gamma(380240,ip)
+# print(len(ip))
+# print(comp.start_bit_offset)
+# comp.start_bit_offset = 0
+# print(' '.join(format(ord(x), 'b') for x in ip))
+# # print(int(ip,2))
+# decoded = comp.decode_gamma_list(ip,2)
+# print(decoded)
+# # print(self.start_bit_offset)
 
-arr = [[1,4], [2, 5], [7,12]]
-mod = 4
-op = ""
-comp.start_bit_offset = 0
-op = comp.append_rice_sequence(arr,mod,op,-1)
-# print(repr(op))
-comp.start_bit_offset = 0
-print(comp.decode_rice_sequence(op,3,-1))
+# arr = [[1,4], [2, 5], [7,12]]
+# mod = 4
+# op = ""
+# comp.start_bit_offset = 0
+# op = comp.append_rice_sequence(arr,mod,op,-1)
+# # print(repr(op))
+# comp.start_bit_offset = 0
+# print(comp.decode_rice_sequence(op,3,-1))
 
 # my_integer = ""
 # c = Compressor()

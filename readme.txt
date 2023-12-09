@@ -6,6 +6,9 @@ Team members:
 Relevance Measure implemented:
     LMJM
 
+Query Processing Technique used:
+    rankBM25_TermAtATime
+
 Instructions to run the program:
     1. Have python installed
     2. Have numpy installed

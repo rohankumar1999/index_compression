@@ -1,0 +1,10 @@
+1970 0 DOC-0001 1 0 term_time
+1970 0 DOC-0002 1 0 term_time
+1970 0 DOC-0003 1 0 term_time
+1970 0 DOC-0004 1 0 term_time
+1970 0 DOC-0005 1 0 term_time
+1970 0 DOC-0006 1 0 term_time
+1970 0 DOC-0007 1 0 term_time
+1970 0 DOC-0008 1 6.825616984399171 term_time
+1970 0 DOC-0009 1 0 term_time
+1970 0 DOC-0010 1 0 term_time
